@@ -8,36 +8,51 @@ This project demonstrates the complete lifecycle of data streaming, from data in
 The goal of this project is to showcase my ability to design, develop, and maintain robust data pipelines while providing clear and impactful visualizations for decision-making.
 
 ## **Technologies Used**
-- **Apache Kafka**: Used for real-time data ingestion and streaming.
-- **Apache Spark**: Processes the data in real-time, transforming and structuring it for storage.
-- **Cassandra**: Serves as the storage layer for processed data, leveraging its distributed NoSQL capabilities.
-- **Flask**: Provides a lightweight web framework for building the dashboard and API endpoints.
-- **Plotly**: Used for creating interactive and visually appealing data visualizations.
-- **Apache Airflow**: Orchestrates the entire pipeline, automating the execution of tasks.
-- **Docker Compose**: Manages the deployment of all services in isolated containers for easy setup and scalability.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg" width="25" height="25" /> **Docker Compose**: Manages the deployment of all services in isolated containers for easy setup and scalability.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apacheairflow/apacheairflow-original.svg" width="25" height="25" /> **Apache Airflow**: Orchestrates the entire pipeline, automating the execution of tasks.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachekafka/apachekafka-original.svg" width="25" height="25" /> **Apache Kafka**: Used for real-time data ingestion and streaming.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachespark/apachespark-original.svg" width="25" height="25" /> **Apache Spark**: Processes the data in real-time, transforming and structuring it for storage.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cassandra/cassandra-original.svg" width="25" height="25" /> **Cassandra**: Serves as the storage layer for processed data, leveraging its distributed NoSQL capabilities.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/flask/flask-original.svg" width="25" height="25" /> **Flask**: Provides a lightweight web framework for building the dashboard and API endpoints.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/plotly/plotly-original.svg" width="25" height="25" /> **Plotly**: Used for creating interactive and visually appealing data visualizations.
+
+
 
 ## Execution
 
-1. Start the required services:
+1. **Start the required services with Docker Compose**:
    ```bash
    docker-compose up -d
    ```
 
-2. Run unit tests:
+2. **Run unit tests**:
    ```bash
-   python -m unittest discover -s tests
+   python3 -m unittest discover -s tests
    ```
 
-   You can access:
-   - Airflow at [http://localhost:8080](http://localhost:8080) 
-   - Control Center at [http://localhost:9021](http://localhost:9021)
+3. **Activate the Airflow DAG**:
+   - Access the Airflow interface at [http://localhost:8080](http://localhost:8080).
+   - Look for the DAG named `kafka_stream` and activate it so Kafka starts receiving data.
+   - Check the messages arriving at the topic from the Confluent Control Center at [http://localhost:9021](http://localhost:9021).
 
-3. Connect to Cassandra:
+4. **Start real-time data processing with Spark**:
+   ```bash
+   python3 spark_stream.py
+   ```
+
+5. **Connect to Cassandra**:
    ```bash
    docker exec -it cassandra cqlsh
    ```
 
-   Comandos útiles dentro de `cqlsh`:
+   Useful commands inside `cqlsh`:
    ```sql
    DESCRIBE KEYSPACES;
    USE spark_streams;
@@ -45,11 +60,12 @@ The goal of this project is to showcase my ability to design, develop, and maint
    SELECT * FROM created_users LIMIT 10;
    ```
 
-4. Start the dashboard:
+6. **Start the dashboard locally**:
    ```bash
    python3 dashboard.py
    ```
-   Then open your browser and go to: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+   Then open your browser and go to: [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
 
 ## Structure
