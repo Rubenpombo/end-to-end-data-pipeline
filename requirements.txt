@@ -1,0 +1,7 @@
+kafka-python
+requests
+pyspark
+cassandra-driver
+statsmodels
+pandas
+numpy
