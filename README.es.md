@@ -5,14 +5,21 @@ Este proyecto demuestra el ciclo de vida completo del streaming de datos, desde 
 
 El objetivo de este proyecto es mostrar mi capacidad para diseñar, desarrollar y mantener pipelines de datos, al mismo tiempo que proporciono visualizaciones claras e impactantes para la toma de decisiones.
 
-### **Tecnologías Usadas**
-- **Apache Kafka**: Utilizado para la ingesta y transmisión de datos en tiempo real.
-- **Apache Spark**: Procesa los datos en tiempo real, transformándolos y estructurándolos para su almacenamiento.
-- **Cassandra**: Sirve como capa de almacenamiento para los datos procesados, aprovechando sus capacidades NoSQL distribuidas.
-- **Flask**: Proporciona un framework web ligero para construir el dashboard y los endpoints de la API.
-- **Plotly**: Utilizado para crear visualizaciones de datos interactivas y visualmente atractivas.
-- **Apache Airflow**: Orquesta todo el pipeline, automatizando la ejecución de tareas.
-- **Docker Compose**: Gestiona el despliegue de todos los servicios en contenedores aislados para una configuración y escalabilidad sencillas.
+## **Tecnologías Usadas**
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg" width="25" height="25" /> **Docker Compose**: Gestiona el despliegue de todos los servicios en contenedores aislados para una configuración y escalabilidad sencillas.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apacheairflow/apacheairflow-original.svg" width="25" height="25" /> **Apache Airflow**: Orquesta todo el pipeline, automatizando la ejecución de tareas.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachekafka/apachekafka-original.svg" width="25" height="25" /> **Apache Kafka**: Utilizado para la ingesta y transmisión de datos en tiempo real.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachespark/apachespark-original.svg" width="25" height="25" /> **Apache Spark**: Procesa los datos en tiempo real, transformándolos y estructurándolos para su almacenamiento.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cassandra/cassandra-original.svg" width="25" height="25" /> **Cassandra**: Sirve como capa de almacenamiento para los datos procesados, aprovechando sus capacidades NoSQL distribuidas.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/flask/flask-original.svg" width="25" height="25" /> **Flask**: Proporciona un framework web ligero para construir el dashboard y los endpoints de la API.
+
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/plotly/plotly-original.svg" width="25" height="25" /> **Plotly**: Utilizado para crear visualizaciones de datos interactivas y visualmente atractivas.
+
 
 
 ## Ejecución
@@ -24,14 +31,20 @@ El objetivo de este proyecto es mostrar mi capacidad para diseñar, desarrollar 
 
 2. **Ejecuta las pruebas unitarias**:
    ```bash
-   python -m unittest discover -s tests
+   python3 -m unittest discover -s tests
    ```
 
-   Puedes acceder a:
-   - Airflow en [http://localhost:8080](http://localhost:8080)
-   - Confluent Control Center en [http://localhost:9021](http://localhost:9021)
+3. **Activa el DAG de Airflow**:
+   - Accede a la interfaz de Airflow en [http://localhost:8080](http://localhost:8080).
+   - Busca el DAG llamado `kafka_stream` y actívalo para que Kafka comience a recibir datos.
+   - Revisa los mensajes que llegan al topic desde el Confluent Control Center en [http://localhost:9021](http://localhost:9021)
 
-3. **Conéctate a Cassandra**:
+4. **Inicia el procesamiento de datos en tiempo real con Spark**:
+   ```bash
+   python3 spark_stream.py
+   ```
+
+5. **Conéctate a Cassandra**:
    ```bash
    docker exec -it cassandra cqlsh
    ```
@@ -44,7 +57,7 @@ El objetivo de este proyecto es mostrar mi capacidad para diseñar, desarrollar 
    SELECT * FROM created_users LIMIT 10;
    ```
 
-4. **Inicia el dashboard localmente**:
+6. **Inicia el dashboard localmente**:
    ```bash
    python3 dashboard.py
    ```
