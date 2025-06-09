@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Engineering Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-card i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .visualizations-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .visualization-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .visualization-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            color: #667eea;
+            margin-right: 15px;
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            position: relative;
+            min-height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .loading i {
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: #e74c3c;
+            font-size: 1.1rem;
+        }
+
+        .error i {
+            margin-right: 10px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+            border-radius: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .footer .credits {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+            
+            .visualization-card {
+                padding: 20px;
+            }
+            
+            iframe {
+                height: 400px;
+            }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-online {
+            background-color: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background-color: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Data Engineering Dashboard</h1>
+            <p>Real-time Analytics from Cassandra Database <span id="status-indicator" class="status-indicator status-offline"></span></p>
+        </div>
+
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-users"></i>
+                <div class="stat-value" id="total-users">-</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-birthday-cake"></i>
+                <div class="stat-value" id="avg-age">-</div>
+                <div class="stat-label">Average Age</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-globe"></i>
+                <div class="stat-value" id="countries">-</div>
+                <div class="stat-label">Countries</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-venus-mars"></i>
+                <div class="stat-value" id="gender-ratio">-</div>
+                <div class="stat-label">Gender Ratio</div>
+            </div>
+        </div>
+
+        <div class="visualizations-grid">
+            <div class="visualization-card">
+                <div class="card-header">
+                    <i class="fas fa-flag"></i>
+                    <h2>User Distribution by Nationality and Gender</h2>
+                </div>
+                <div class="chart-container">
+                    <div class="loading" id="loading-1">
+                        <i class="fas fa-spinner"></i>
+                        Loading visualization...
+                    </div>
+                    <iframe id="chart-1" src="/visualization_gender_nationality" style="display: none;" onload="hideLoading(1)"></iframe>
+                </div>
+            </div>
+
+            <div class="visualization-card">
+                <div class="card-header">
+                    <i class="fas fa-clock"></i>
+                    <h2>Age vs Registration Date Analysis</h2>
+                </div>
+                <div class="chart-container">
+                    <div class="loading" id="loading-2">
+                        <i class="fas fa-spinner"></i>
+                        Loading visualization...
+                    </div>
+                    <iframe id="chart-2" src="/visualization_age_registration" style="display: none;" onload="hideLoading(2)"></iframe>
+                </div>
+            </div>
+
+            <div class="visualization-card">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar"></i>
+                    <h2>Age Distribution</h2>
+                </div>
+                <div class="chart-container">
+                    <div class="loading" id="loading-3">
+                        <i class="fas fa-spinner"></i>
+                        Loading visualization...
+                    </div>
+                    <iframe id="chart-3" src="/visualization_age_distribution" style="display: none;" onload="hideLoading(3)"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><i class="fas fa-database"></i> Powered by Apache Cassandra & Flask</p>
+            <p class="credits">Created by Ruben - Data Engineering Portfolio Project</p>
+            <p class="credits">Last updated: <span id="last-updated">-</span></p>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshDashboard()" title="Refresh Dashboard">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <script>
+        let refreshing = false;
+
+        function hideLoading(chartNum) {
+            document.getElementById(`loading-${chartNum}`).style.display = 'none';
+            document.getElementById(`chart-${chartNum}`).style.display = 'block';
+        }
+
+        function showError(chartNum, message) {
+            const loadingEl = document.getElementById(`loading-${chartNum}`);
+            loadingEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            loadingEl.className = 'error';
+        }
+
+        function loadStats() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Stats error:', data.error);
+                        return;
+                    }
+                    
+                    document.getElementById('total-users').textContent = data.total_users || 0;
+                    document.getElementById('avg-age').textContent = data.avg_age ? `${data.avg_age} yrs` : '-';
+                    document.getElementById('countries').textContent = data.nationality_count || 0;
+                    
+                    // Calculate gender ratio
+                    const genderDist = data.gender_distribution || {};
+                    const male = genderDist.Male || 0;
+                    const female = genderDist.Female || 0;
+                    const ratio = male && female ? `${Math.round((male/female) * 100)}:100` : '-';
+                    document.getElementById('gender-ratio').textContent = ratio;
+                    
+                    // Update status indicator
+                    document.getElementById('status-indicator').className = 'status-indicator status-online';
+                    
+                    // Update last updated time
+                    document.getElementById('last-updated').textContent = new Date().toLocaleString();
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                    document.getElementById('status-indicator').className = 'status-indicator status-offline';
+                });
+        }
+
+        function refreshDashboard() {
+            if (refreshing) return;
+            
+            refreshing = true;
+            const btn = document.querySelector('.refresh-btn i');
+            btn.style.animation = 'spin 1s linear infinite';
+            
+            // Reload iframes
+            document.getElementById('chart-1').src = '/visualization_gender_nationality?' + Date.now();
+            document.getElementById('chart-2').src = '/visualization_age_registration?' + Date.now();
+            document.getElementById('chart-3').src = '/visualization_age_distribution?' + Date.now();
+            
+            // Show loading indicators
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`loading-${i}`).style.display = 'flex';
+                document.getElementById(`loading-${i}`).innerHTML = '<i class="fas fa-spinner"></i> Loading visualization...';
+                document.getElementById(`loading-${i}`).className = 'loading';
+                document.getElementById(`chart-${i}`).style.display = 'none';
+            }
+            
+            // Reload stats
+            loadStats();
+            
+            setTimeout(() => {
+                refreshing = false;
+                btn.style.animation = '';
+            }, 2000);
+        }
+
+        // Handle iframe load errors
+        document.getElementById('chart-1').onerror = () => showError(1, 'Failed to load visualization');
+        document.getElementById('chart-2').onerror = () => showError(2, 'Failed to load visualization');
+        document.getElementById('chart-3').onerror = () => showError(3, 'Failed to load visualization');
+
+        // Load stats on page load
+        window.addEventListener('load', () => {
+            loadStats();
+            
+            // Auto-refresh every 5 minutes
+            setInterval(loadStats, 300000);
+        });
+
+        // Add keyboard shortcut for refresh (Ctrl+R or F5)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+                e.preventDefault();
+                refreshDashboard();
+            }
+        });
+    </script>
+</body>
+</html>
