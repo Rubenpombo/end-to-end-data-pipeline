@@ -3,6 +3,10 @@
 ## **Resumen**
 Este proyecto demuestra el ciclo de vida completo del streaming de datos, desde la ingesta hasta la visualización. Captura datos de usuario desde una API externa, los procesa en tiempo real utilizando **Apache Kafka** y **Apache Spark**, los almacena en una base de datos **Cassandra** y los visualiza a través de un dashboard interactivo construido con **Flask** y **Plotly**. El pipeline está orquestado con **Apache Airflow**, garantizando automatización y confiabilidad.
 
+<p align="center">
+  <img src="visuals/dashboard-preview.gif" alt="Dashboard Preview" width="600">
+</p>
+
 El objetivo de este proyecto es mostrar mi capacidad para diseñar, desarrollar y mantener pipelines de datos, al mismo tiempo que proporciono visualizaciones claras e impactantes para la toma de decisiones.
 
 ## **Tecnologías Usadas**
@@ -33,11 +37,13 @@ El objetivo de este proyecto es mostrar mi capacidad para diseñar, desarrollar 
    ```bash
    python3 -m unittest discover -s tests
    ```
+   ![tests](visuals/tests.png)
 
 3. **Activa el DAG de Airflow**:
    - Accede a la interfaz de Airflow en [http://localhost:8080](http://localhost:8080).
    - Busca el DAG llamado `kafka_stream` y actívalo para que Kafka comience a recibir datos.
    - Revisa los mensajes que llegan al topic desde el Confluent Control Center en [http://localhost:9021](http://localhost:9021)
+      ![control_center](visuals/control_center.png)
 
 4. **Inicia el procesamiento de datos en tiempo real con Spark**:
    ```bash
