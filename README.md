@@ -5,7 +5,13 @@
 ## **Summary**
 This project demonstrates the complete lifecycle of data streaming, from data ingestion to visualization. It captures user data from an external API, processes it in real-time using **Apache Kafka** and **Apache Spark**, stores it in a **Cassandra** database, and visualizes it through an interactive dashboard built with **Flask** and **Plotly**. The pipeline is orchestrated using **Apache Airflow**, ensuring automation and reliability.
 
+<p align="center">
+  <img src="visuals/dashboard-preview.gif" alt="Dashboard Preview" width="600">
+</p>
+
 The goal of this project is to showcase my ability to design, develop, and maintain robust data pipelines while providing clear and impactful visualizations for decision-making.
+
+
 
 ## **Technologies Used**
 
@@ -36,11 +42,14 @@ The goal of this project is to showcase my ability to design, develop, and maint
    ```bash
    python3 -m unittest discover -s tests
    ```
+   ![tests](visuals/tests.png)
+
 
 3. **Activate the Airflow DAG**:
    - Access the Airflow interface at [http://localhost:8080](http://localhost:8080).
    - Look for the DAG named `kafka_stream` and activate it so Kafka starts receiving data.
    - Check the messages arriving at the topic from the Confluent Control Center at [http://localhost:9021](http://localhost:9021).
+      ![control_center](visuals/control_center.png)
 
 4. **Start real-time data processing with Spark**:
    ```bash

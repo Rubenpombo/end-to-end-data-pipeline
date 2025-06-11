@@ -1,6 +1,7 @@
 from datetime import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+import time
 # from airflow.operators.bash_operator import BashOperator
 
 
@@ -86,13 +87,14 @@ def stream_data():
     current_time = time.time()
 
     while True:
-        if time.time() > current_time + 60: # Stop after 60 seconds
+        if time.time() > current_time + 120: # Stop after 60 seconds
             break
         try:
             res = get_data()
             if res is not None:  # Ensure res is not None before formatting
                 res = format_data(res)
                 producer.send('users_created', json.dumps(res).encode('utf-8'))
+                time.sleep(0.5)
 
         except Exception as e:
             logging.error(f"Error sending message: {e}")

@@ -1,4 +1,5 @@
-
+#!/bin/bash
+# script/entrypoint.sh
 set -e
 
 if [ -e "/opt/airflow/requirements.txt" ]; then
