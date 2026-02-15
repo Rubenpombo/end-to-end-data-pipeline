@@ -5,11 +5,15 @@ services:
     image: confluentinc/cp-zookeeper:7.9.1
     hostname: zookeeper
     container_name: zookeeper
+    restart: always
     ports:
       - "2181:2181" # Expone el puerto 2181 del contenedor al host, necesario para que otros servicios (como Kafka) se conecten
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000  # Intervalo base de tiempo en milisegundos usado por Zookeeper
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
     healthcheck:
       test: ["CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181"]
       # Este comando pregunta a Zookeeper "¿estás bien?" (ruok), espera una respuesta. Si responde "imok", está saludable.
@@ -23,6 +27,7 @@ services:
     image: confluentinc/cp-server:7.9.1
     hostname: broker
     container_name: broker
+    restart: always
     depends_on:
       zookeeper:  # Asegura que Zookeeper esté iniciado antes de iniciar el broker
         condition: service_healthy  # Espera a que Zookeeper esté saludable
@@ -48,6 +53,8 @@ services:
       CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1  # Número de réplicas para el topic de métricas
       CONFLUENT_METRICS_ENABLE: 'false'  # Deshabilita las métricas de Confluent
       CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'  # ID de cliente para soporte (anónimo)
+    volumes:
+      - broker_data:/var/lib/kafka/data
     networks:
       - confluent
     healthcheck:
@@ -60,6 +67,7 @@ services:
     image: confluentinc/cp-schema-registry:7.9.1  # Actualizada versión para coincidir con Kafka y Zookeeper
     hostname: schema-registry
     container_name: schema-registry
+    restart: always
     depends_on:
       broker:
         condition: service_healthy  # Espera a que el broker esté saludable antes de iniciar
@@ -81,6 +89,7 @@ services:
     image: confluentinc/cp-enterprise-control-center:7.9.1  # Actualizada versión para coincidir con Kafka y Zookeeper
     hostname: control-center
     container_name: control-center
+    restart: always
     depends_on:
       broker:
         condition: service_healthy
@@ -106,9 +115,10 @@ services:
       retries: 5
 
   webserver:
-    image: apache/airflow:2.11.0-python3.12
+    image: apache/airflow:3.1.5-python3.12
     command: webserver
     entrypoint: ['/opt/airflow/scripts/entrypoint.sh']
+    restart: always
     depends_on:
       - postgres
     environment:
@@ -139,9 +149,10 @@ services:
 
 
   scheduler:
-    image: apache/airflow:2.11.0-python3.12
+    image: apache/airflow:3.1.5-python3.12
     hostname: scheduler
     container_name: scheduler
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
@@ -167,7 +178,8 @@ services:
       - confluent
 
   postgres:
-    image: postgres:14.0
+    image: postgres:18.1
+    restart: always
     environment:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
@@ -185,14 +197,17 @@ services:
       retries: 5
   
   spark-master:
-    # image: bitnami/spark:latest
+    # image: apache/spark:3.4.1
     build:
       context: .
       dockerfile: Dockerfile-spark
-    command: bin/spark-class org.apache.spark.deploy.master.Master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    restart: always
     ports:
       - "9090:8080"
       - "7077:7077"
+    volumes:
+      - spark_checkpoint:/tmp/checkpoint
     networks:
       - confluent
     healthcheck:
@@ -204,11 +219,12 @@ services:
   # Si quieres varios workers de Spark, copiar este bloque y cambiar el nombre del servicio
   # spark-worker-1, spark-worker-2, etc.
   spark-worker:
-    # image: bitnami/spark:latest
+    # image: apache/spark:3.4.1
     build:
       context: .
       dockerfile: Dockerfile-spark
-    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    restart: always
     depends_on:
       - spark-master
     environment:
@@ -216,13 +232,16 @@ services:
       SPARK_WORKER_CORES: 2
       SPARK_WORKER_MEMORY: 1g
       SPARK_MASTER_URL: spark://spark-master:7077
+    volumes:
+      - spark_checkpoint:/tmp/checkpoint
     networks:
       - confluent
 
   cassandra_db:
-    image: cassandra:latest
+    image: cassandra:5.0.6
     container_name: cassandra
     hostname: cassandra
+    restart: always
     ports:
       - "9042:9042"
     environment:
@@ -231,6 +250,7 @@ services:
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
     volumes:
+      - cassandra_data:/var/lib/cassandra
       - ./:/home
     networks:
       - confluent
@@ -240,5 +260,34 @@ services:
       timeout: 5s
       retries: 3
 
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=hadesarchitect-cassandra-datasource
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/main_dashboard.json
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - confluent
+    depends_on:
+      cassandra_db:
+        condition: service_healthy
+
 networks:
   confluent:
+
+volumes:
+  zookeeper_data:
+  zookeeper_log:
+  broker_data:
+  cassandra_data:
+  spark_checkpoint:
+  grafana_data:

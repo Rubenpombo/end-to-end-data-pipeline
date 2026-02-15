@@ -1,8 +1,4 @@
-Flask
-cassandra-driver
-pandas
-numpy
-requests
 kafka-python
+requests
 pyspark
-plotly
+cassandra-driver
