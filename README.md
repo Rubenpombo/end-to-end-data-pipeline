@@ -25,11 +25,30 @@ The goal of this project is to showcase my ability to design, develop, and maint
 
 - <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cassandra/cassandra-original.svg" width="25" height="25" /> **Cassandra**: Serves as the storage layer for processed data, leveraging its distributed NoSQL capabilities.
 
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/flask/flask-original.svg" width="25" height="25" /> **Flask**: Provides a lightweight web framework for building the dashboard and API endpoints.
-
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/plotly/plotly-original.svg" width="25" height="25" /> **Plotly**: Used for creating interactive and visually appealing data visualizations.
+- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/grafana/grafana-original.svg" width="25" height="25" /> **Grafana**: Provides a powerful and interactive dashboard for visualizing real-time data stored in Cassandra.
 
 
+
+## Automation with Make
+
+To simplify the execution process, you can use the `Makefile` included in the project:
+
+- **Setup and Start**: Sets up the environment, starts containers, runs tests, and activates the Airflow DAG.
+  ```bash
+  make all
+  ```
+
+- **Run Streaming Job**: Starts the Spark streaming process (run in a separate terminal).
+  ```bash
+  make stream
+  ```
+
+- **Stop Services**:
+  ```bash
+  make down
+  ```
+
+Run `make help` to see all available commands.
 
 ## Execution
 
@@ -38,25 +57,35 @@ The goal of this project is to showcase my ability to design, develop, and maint
    docker-compose up -d
    ```
 
-2. **Run unit tests**:
+2. **Set up local environment**:
+   Create and activate the virtual environment, then install dependencies:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+3. **Run unit tests**:
    ```bash
    python3 -m unittest discover -s tests
    ```
    ![tests](visuals/tests.png)
 
 
-3. **Activate the Airflow DAG**:
+4. **Activate the Airflow DAG**:
    - Access the Airflow interface at [http://localhost:8080](http://localhost:8080).
-   - Look for the DAG named `kafka_stream` and activate it so Kafka starts receiving data.
+   - Look for the DAG named `user_automation` and activate it so Kafka starts receiving data.
    - Check the messages arriving at the topic from the Confluent Control Center at [http://localhost:9021](http://localhost:9021).
       ![control_center](visuals/control_center.png)
 
-4. **Start real-time data processing with Spark**:
+5. **Start real-time data processing with Spark**:
+   Open a new terminal, activate the environment, and run the script:
    ```bash
+   source venv/bin/activate
    python3 spark_stream.py
    ```
 
-5. **Connect to Cassandra**:
+6. **Connect to Cassandra**:
    ```bash
    docker exec -it cassandra cqlsh
    ```
@@ -69,12 +98,13 @@ The goal of this project is to showcase my ability to design, develop, and maint
    SELECT * FROM created_users LIMIT 10;
    ```
 
-6. **Start the dashboard locally**:
-   ```bash
-   python3 dashboard.py
-   ```
+7. **Access the Grafana Dashboard**:
+   Open your browser and go to: [http://localhost:3000](http://localhost:3000).
+   
+   - **Username**: `admin`
+   - **Password**: `admin`
 
-   Then open your browser and go to: [http://127.0.0.1:5000](http://127.0.0.1:5000).
+   The dashboard "User Registration Dashboard" should be available in the default folder.
 
 
 ## Structure
@@ -82,17 +112,16 @@ The goal of this project is to showcase my ability to design, develop, and maint
 dataeng-project/
 ├── dags/                      # Airflow DAGs
 │   └── kafka_stream.py        
+├── grafana/                   # Grafana configuration
+│   ├── dashboards/            # Dashboard JSON definitions
+│   └── provisioning/          # Provisioning for dashboards and datasources
 ├── script/                   # Utility scripts
 │   └── entrypoint.sh         
-├── templates/                # HTML templates for Flask
-│   └── index.html             
 ├── tests/                    # Unit tests for the project
 │   ├── test_api_health.py     
 │   ├── test_cassandra.py      
-│   ├── test_dashboard.py      
-│   └── test_spark_stream.py   
+│   ├── test_spark_stream.py   
 ├── venv/                     # Virtual environment
-├── dashboard.py              # Flask application for data visualization
 ├── docker-compose.yml        # Docker Compose configuration for services
 ├── Dockerfile-spark          # Dockerfile for Spark setup
 ├── README.es.md              # Project documentation in Spanish

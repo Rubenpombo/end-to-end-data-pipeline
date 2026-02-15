@@ -75,10 +75,11 @@ def stream_data():
     from kafka import KafkaProducer
     import time
     import logging
+    import os
 
     # Configure producer with specific settings to handle DNS issues
     producer = KafkaProducer(
-        bootstrap_servers=['broker:29092'], # localhost because the script is executed locally
+        bootstrap_servers=[os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'broker:29092')],
         client_id='user-producer',
         security_protocol="PLAINTEXT",
         connections_max_idle_ms=5000

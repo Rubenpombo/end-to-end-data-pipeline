@@ -131,7 +131,7 @@ def connect_to_kafka(spark_conn):
     try:
         spark_df = spark_conn.readStream \
             .format('kafka') \
-            .option('kafka.bootstrap.servers', 'localhost:9092') \
+            .option('kafka.bootstrap.servers', os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')) \
             .option('subscribe', 'users_created') \
             .option('startingOffsets', 'earliest') \
             .load()
@@ -149,7 +149,7 @@ def create_cassandra_connection():
     """
 
     try:
-        cluster = Cluster(['localhost'], port=9042, load_balancing_policy=RoundRobinPolicy(), protocol_version=5)
+        cluster = Cluster([os.getenv('CASSANDRA_HOST', 'localhost')], port=9042, load_balancing_policy=RoundRobinPolicy(), protocol_version=5)
         cas_session = cluster.connect() 
         return cas_session
     

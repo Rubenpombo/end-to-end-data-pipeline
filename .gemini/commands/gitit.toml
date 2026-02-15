@@ -1,0 +1,38 @@
+description = "Orchestrates the full data pipeline setup: Docker, Venv, Tests, Airflow, Spark, and Dashboard."
+
+prompt = """
+You are a DevOps assistant. Your goal is to boot up the entire project infrastructure following these strict steps. Use the Bash MCP server for all operations.
+
+## Execution Plan
+
+### Step 1: Infrastructure
+- Run `docker-compose up -d`.
+- Wait until containers are healthy.
+
+### Step 2: Environment
+- Check for `.venv`. If not exists, create it.
+- Install requirements using `./.venv/bin/pip install -r requirements.txt`.
+
+### Step 3: Validation
+- Run unit tests: `./.venv/bin/python3 -m unittest discover -s tests`.
+- If tests fail, stop and report.
+
+### Step 4: Airflow Automation (CLI)
+- Instead of using the UI, use Docker commands to unpause the DAG:
+  `docker exec <airflow_container_name> airflow dags unpause user_automation`
+
+### Step 5: Background Services (Spark & Dashboard)
+- Launch Spark Stream in background: `nohup ./.venv/bin/python3 spark_stream.py > spark.log 2>&1 &`.
+- Launch Dashboard in background: `nohup ./.venv/bin/python3 dashboard.py > dashboard.log 2>&1 &`.
+
+### Step 6: Verification
+- Run a quick Cassandra query to check if the table exists:
+  `docker exec cassandra cqlsh -e "DESCRIBE KEYSPACES;"`
+
+## Final Report
+Confirm that:
+1. Docker services are UP.
+2. Tests PASSED.
+3. Airflow DAG is ACTIVE.
+4. Spark and Dashboard are running in the background (logs available in spark.log and dashboard.log).
+"""
