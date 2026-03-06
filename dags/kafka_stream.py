@@ -73,7 +73,6 @@ def format_data(res):
 def stream_data():
     import json
     from kafka import KafkaProducer
-    import time
     import logging
 
     # Configure producer with specific settings to handle DNS issues
