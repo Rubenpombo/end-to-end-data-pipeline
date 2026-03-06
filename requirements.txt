@@ -1,6 +1,6 @@
-kafka-python
+kafka-python-ng
 requests
-pyspark
+pyspark==4.0.2
 cassandra-driver
 statsmodels
 pandas

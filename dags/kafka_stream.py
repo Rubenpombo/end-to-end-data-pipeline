@@ -1,6 +1,6 @@
 from datetime import datetime
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 import time
 # from airflow.operators.bash_operator import BashOperator
 
@@ -103,7 +103,7 @@ def stream_data():
 
 with DAG('user_automation',
          default_args=default_args,
-         schedule_interval='@daily',
+         schedule='@daily',
          catchup=False,) as dag:
     
     streaming_task = PythonOperator(

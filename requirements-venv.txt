@@ -3,6 +3,6 @@ cassandra-driver
 pandas
 numpy
 requests
-kafka-python
-pyspark
+kafka-python-ng
+pyspark==4.0.2
 plotly
