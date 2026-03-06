@@ -1,8 +1,6 @@
 import logging
 import sys
-from datetime import datetime
 
-from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import Cluster
 from cassandra.policies import RoundRobinPolicy
 from pyspark.sql import SparkSession

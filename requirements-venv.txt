@@ -6,3 +6,6 @@ requests
 kafka-python-ng
 pyspark==4.0.2
 plotly
+pytest
+pytest-cov
+ruff

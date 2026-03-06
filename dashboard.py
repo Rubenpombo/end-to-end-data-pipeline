@@ -2,12 +2,9 @@ from flask import Flask, render_template, jsonify
 from cassandra.cluster import Cluster
 from cassandra.policies import RoundRobinPolicy
 import plotly.express as px
-import plotly.graph_objects as go
 import pandas as pd
 import logging
-from datetime import datetime
 import json
-import plotly
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
