@@ -1,7 +1,8 @@
-FROM bitnami/spark:latest
+FROM apache/spark:latest
 
 USER root
 
-RUN install_packages curl
+# Instalamos curl usando apt-get (Debian base)
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-USER 1001
+USER spark
