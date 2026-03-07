@@ -5,3 +5,7 @@ cassandra-driver
 statsmodels
 pandas
 numpy
+pytest
+pytest-cov
+ruff
+yamllint

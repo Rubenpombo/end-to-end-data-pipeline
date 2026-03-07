@@ -1,102 +1,81 @@
-# End-to-End Data Streaming Lifecycle
+# End-to-End Data Streaming Lifecycle (2026 Edition)
 
 📄 Versión en español disponible en [README.es.md](README.es.md)
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Rubenpombo_end-to-end-data-pipeline&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Rubenpombo_end-to-end-data-pipeline)
+[![CI Pipeline](https://github.com/Rubenpombo/end-to-end-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Rubenpombo/end-to-end-data-pipeline/actions/workflows/ci.yml)
+
 ## **Summary**
-This project demonstrates the complete lifecycle of data streaming, from data ingestion to visualization. It captures user data from an external API, processes it in real-time using **Apache Kafka** and **Apache Spark**, stores it in a **Cassandra** database, and visualizes it through an interactive dashboard built with **Flask** and **Plotly**. The pipeline is orchestrated using **Apache Airflow**, ensuring automation and reliability.
+This project demonstrates a professional real-time data pipeline architecture updated for **2026 standards**. It captures user data from an external API, streams it through **Apache Kafka**, processes it with **Apache Spark Streaming**, and stores the results in **Apache Cassandra**. 
+
+The entire stack is containerized with **Docker**, orchestrated by **Apache Airflow 3.x**, and features a modern observability layer with **Kafka UI**, **Prometheus**, and **Grafana**.
 
 <p align="center">
   <img src="visuals/dashboard-preview.gif" alt="Dashboard Preview" width="600">
 </p>
 
-The goal of this project is to showcase my ability to design, develop, and maintain robust data pipelines while providing clear and impactful visualizations for decision-making.
+## **Architecture & Technologies**
 
+### **Core Data Stack**
+- **Apache Airflow 3.1.7**: Pipeline orchestration and data ingestion from RandomUser API.
+- **Apache Kafka 7.9 (Confluent)**: High-throughput distributed messaging system.
+- **Apache Spark 4.0.2**: Real-time stream processing and data transformation.
+- **Apache Cassandra 5.0**: Distributed NoSQL database for final data storage.
 
+### **Observability & Quality**
+- **Kafka UI**: Visual management of topics, consumers, and messages ([localhost:8000](http://localhost:8000)).
+- **Prometheus & Grafana**: System metrics collection and visual dashboards ([localhost:3000](http://localhost:3000)).
+- **SonarCloud**: Continuous code quality and security analysis.
+- **GitHub Actions**: Automated CI/CD pipeline with Ruff linting and Pytest.
 
-## **Technologies Used**
+## **Execution Guide**
 
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg" width="25" height="25" /> **Docker Compose**: Manages the deployment of all services in isolated containers for easy setup and scalability.
-
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apacheairflow/apacheairflow-original.svg" width="25" height="25" /> **Apache Airflow**: Orchestrates the entire pipeline, automating the execution of tasks.
-
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachekafka/apachekafka-original.svg" width="25" height="25" /> **Apache Kafka**: Used for real-time data ingestion and streaming.
-
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachespark/apachespark-original.svg" width="25" height="25" /> **Apache Spark**: Processes the data in real-time, transforming and structuring it for storage.
-
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cassandra/cassandra-original.svg" width="25" height="25" /> **Cassandra**: Serves as the storage layer for processed data, leveraging its distributed NoSQL capabilities.
-
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/flask/flask-original.svg" width="25" height="25" /> **Flask**: Provides a lightweight web framework for building the dashboard and API endpoints.
-
-- <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/plotly/plotly-original.svg" width="25" height="25" /> **Plotly**: Used for creating interactive and visually appealing data visualizations.
-
-
-
-## Execution
-
-1. **Start the required services with Docker Compose**:
+1. **Start the Infrastructure**:
    ```bash
    docker-compose up -d
    ```
 
-2. **Run unit tests**:
+2. **Verify Service Health**:
+   Wait a few seconds for all services to be healthy. You can check the status:
+   ```bash
+   docker-compose ps
+   ```
+
+3. **Run Automated Tests**:
    ```bash
    python3 -m unittest discover -s tests
    ```
-   ![tests](visuals/tests.png)
 
+4. **Activate Data Ingestion (Airflow)**:
+   - Access Airflow at [http://localhost:8080](http://localhost:8080).
+   - Activate the `user_automation` DAG.
+   - Monitor incoming messages in **Kafka UI**: [http://localhost:8000](http://localhost:8000).
 
-3. **Activate the Airflow DAG**:
-   - Access the Airflow interface at [http://localhost:8080](http://localhost:8080).
-   - Look for the DAG named `kafka_stream` and activate it so Kafka starts receiving data.
-   - Check the messages arriving at the topic from the Confluent Control Center at [http://localhost:9021](http://localhost:9021).
-      ![control_center](visuals/control_center.png)
-
-4. **Start real-time data processing with Spark**:
+5. **Start Spark Streaming**:
    ```bash
+   # Ensure you have the requirements installed
+   pip install -r requirements.txt
+   export CASSANDRA_HOST=localhost
+   export KAFKA_HOST=localhost:9092
    python3 spark_stream.py
    ```
 
-5. **Connect to Cassandra**:
+6. **Visualize Data**:
+   - **Business Dashboard (Flask)**: Run `python3 dashboard.py` and visit [http://localhost:5000](http://localhost:5000).
+   - **System Metrics (Grafana)**: Visit [http://localhost:3000](http://localhost:3000) (User: `admin` / Pass: `admin`).
+
+## **Project Structure**
    ```bash
-   docker exec -it cassandra cqlsh
-   ```
-
-   Useful commands inside `cqlsh`:
-   ```sql
-   DESCRIBE KEYSPACES;
-   USE spark_streams;
-   DESCRIBE TABLES;
-   SELECT * FROM created_users LIMIT 10;
-   ```
-
-6. **Start the dashboard locally**:
-   ```bash
-   python3 dashboard.py
-   ```
-
-   Then open your browser and go to: [http://127.0.0.1:5000](http://127.0.0.1:5000).
-
-
-## Structure
-   ```bash
-dataeng-project/
-├── dags/                      # Airflow DAGs
-│   └── kafka_stream.py        
-├── script/                   # Utility scripts
-│   └── entrypoint.sh         
-├── templates/                # HTML templates for Flask
-│   └── index.html             
-├── tests/                    # Unit tests for the project
-│   ├── test_api_health.py     
-│   ├── test_cassandra.py      
-│   ├── test_dashboard.py      
-│   └── test_spark_stream.py   
-├── venv/                     # Virtual environment
-├── dashboard.py              # Flask application for data visualization
-├── docker-compose.yml        # Docker Compose configuration for services
-├── Dockerfile-spark          # Dockerfile for Spark setup
-├── README.es.md              # Project documentation in Spanish
-├── README.md                 # Project documentation in English
-├── requirements.txt          # Python dependencies
-└── spark_stream.py           # Spark streaming logic
+.
+├── .github/workflows/         # CI/CD Pipeline (GitHub Actions)
+├── dags/                      # Airflow DAGs (Ingestion logic)
+├── script/                    # Docker entrypoints
+├── tests/                     # Unit & Integration tests
+├── dashboard.py               # Flask/Plotly visualization app
+├── docker-compose.yml         # Container orchestration (Full Stack)
+├── Dockerfile-spark           # Custom Spark 4.x image
+├── prometheus.yml             # Metrics collection config
+├── grafana_datasource.yml     # Automated Grafana setup
+├── requirements.txt           # Consolidated dependencies
+└── spark_stream.py            # Spark 4.x streaming logic
 ```

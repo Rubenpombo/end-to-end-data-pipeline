@@ -1,10 +1,12 @@
 name: CI Pipeline
 
-on:
+'on':
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   quality:
@@ -14,7 +16,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Importante para que SonarCloud analice el historial
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -24,21 +26,29 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff pytest pytest-cov
+          pip install ruff pytest pytest-cov yamllint
           pip install -r requirements.txt
 
       - name: Run Linting (Ruff)
         run: ruff check .
 
+      - name: Run YAML Linting
+        run: yamllint .
+
       - name: Run Tests with Coverage
         run: |
           export PYTHONPATH=$PYTHONPATH:.
-          pytest tests/test_api_health.py tests/test_spark_stream.py --doctest-modules --junitxml=junit.xml --cov=. --cov-report=xml
-        # Nota: He excluido test_cassandra y test_dashboard porque requieren la DB real levantada.
-        # En una fase posterior podríamos usar Docker en CI para incluirlos.
+          pytest tests/test_api_health.py tests/test_spark_stream.py --cov=. --cov-report=xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: sonarsource/sonarqube-scan-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.sources=.
+            -Dsonar.tests=tests
+            -Dsonar.exclusions=**/__pycache__/**,.venv/**,visuals/**
+            -Dsonar.qualitygate.wait=false

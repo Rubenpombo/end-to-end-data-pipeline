@@ -1,53 +1,35 @@
 version: '3.8'
 
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.9.0
-    hostname: zookeeper
-    container_name: zookeeper
-    ports:
-      - "2181:2181" # Expone el puerto 2181 del contenedor al host, necesario para que otros servicios (como Kafka) se conecten
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000  # Intervalo base de tiempo en milisegundos usado por Zookeeper
-    healthcheck:
-      test: ["CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181"]
-      # Este comando pregunta a Zookeeper "¿estás bien?" (ruok), espera una respuesta. Si responde "imok", está saludable.
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - confluent   # Conecta el contenedor a una red llamada "confluent" para comunicarse con otros servicios (como Kafka)
-
   broker:
     image: confluentinc/cp-server:7.9.0
     hostname: broker
     container_name: broker
-    depends_on:
-      zookeeper:  # Asegura que Zookeeper esté iniciado antes de iniciar el broker
-        condition: service_healthy  # Espera a que Zookeeper esté saludable
     ports:
-      - "9092:9092"  # Expone el puerto 9092 del contenedor al host, necesario para que los clientes se conecten al broker
-      - "9101:9101"  # Expone el puerto 9101 del contenedor al host, necesario para que los clientes se conecten al broker
+      - "9092:9092"
+      - "9101:9101"
     environment:
-      KAFKA_BROKER_ID: 1  # Identificador único del broker en el clúster
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'  # Conexión a Zookeeper
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT  # Mapeo de protocolos de seguridad para los listeners
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092  # Direcciones que se anuncian a los clientes
-      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter  # Reporter para métricas de Confluent
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Factor de replicación para el topic de offsets (1 para entornos dev)
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # Sin retraso inicial para rebalanceo de grupos
-      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1  # Factor de replicación para el topic de licencias
-      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1  # Factor de replicación para el topic del balanceador
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1  # Mínimo número de réplicas in-sync para el log de transacciones
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1  # Factor de replicación para el log de transacciones
-      KAFKA_JMX_PORT: 9101  # Puerto para monitoreo JMX
-      KAFKA_JMX_HOSTNAME: localhost  # Hostname para conexiones JMX
-      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081  # URL del registro de esquemas
-      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092  # Servidores bootstrap para el reporter de métricas
-      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1  # Número de réplicas para el topic de métricas
-      CONFLUENT_METRICS_ENABLE: 'false'  # Deshabilita las métricas de Confluent
-      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'  # ID de cliente para soporte (anónimo)
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@broker:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://broker:29092,CONTROLLER://broker:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONFLUENT_METRICS_ENABLE: 'false'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
     networks:
       - confluent
     healthcheck:
@@ -57,54 +39,71 @@ services:
       retries: 5
 
   schema-registry:
-    image: confluentinc/cp-schema-registry:7.9.0  # Actualizada versión para coincidir con Kafka y Zookeeper
+    image: confluentinc/cp-schema-registry:7.9.0
     hostname: schema-registry
     container_name: schema-registry
     depends_on:
       broker:
-        condition: service_healthy  # Espera a que el broker esté saludable antes de iniciar
+        condition: service_healthy
     ports:
-      - "8081:8081"  # Expone el puerto del Schema Registry para acceso externo
+      - "8081:8081"
     environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry  # Nombre de host para identificar el servicio
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'  # Conexión al broker de Kafka
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081  # Configura el listener para aceptar conexiones externas
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
     networks:
       - confluent
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8081']  # Verifica que el servicio esté respondiendo
+      test: ['CMD', 'curl', '-f', 'http://localhost:8081']
       interval: 30s
       timeout: 10s
       retries: 5
 
-  control-center:
-    image: confluentinc/cp-enterprise-control-center:7.9.0  # Actualizada versión para coincidir con Kafka y Zookeeper
-    hostname: control-center
-    container_name: control-center
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    hostname: kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8000:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+      KAFKA_CLUSTERS_0_METRICS_PORT: 9101
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      DYNAMIC_CONFIG_ENABLED: 'true'
     depends_on:
       broker:
         condition: service_healthy
       schema-registry:
         condition: service_healthy
-    ports:
-      - "9021:9021"  # Puerto web UI para acceso al panel de Control Center
-    environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'  # Conexión al broker de Kafka
-      CONTROL_CENTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'  # Conexión al Schema Registry
-      CONTROL_CENTER_REPLICATION_FACTOR: 1  # Factor de replicación para entornos dev
-      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1  # Número de particiones para tópicos internos
-      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1  # Particiones para el topic de interceptor de monitoreo
-      CONFLUENT_METRICS_TOPIC_REPLICATION: 1  # Factor de replicación para tópicos de métricas
-      CONFLUENT_METRICS_ENABLE: 'false'  # Deshabilita las métricas de Confluent
-      PORT: 9021  # Puerto interno para Control Center
     networks:
       - confluent
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9021/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
+  prometheus:
+    image: prom/prometheus:latest
+    hostname: prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - confluent
+
+  grafana:
+    image: grafana/grafana:latest
+    hostname: grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana_datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+    depends_on:
+      - prometheus
+    networks:
+      - confluent
 
   webserver:
     image: apache/airflow:3.1.7-python3.12
@@ -137,7 +136,6 @@ services:
       start_period: 60s
     networks:
       - confluent
-
 
   scheduler:
     image: apache/airflow:3.1.7-python3.12
@@ -186,14 +184,15 @@ services:
       retries: 5
   
   spark-master:
-    # image: bitnami/spark:latest
     build:
       context: .
       dockerfile: Dockerfile-spark
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     ports:
-      - "9090:8080"
+      - "9091:8080"
       - "7077:7077"
+    volumes:
+      - spark_checkpoints:/tmp/checkpoint
     networks:
       - confluent
     healthcheck:
@@ -202,10 +201,7 @@ services:
       timeout: 5s
       retries: 3
 
-  # Si quieres varios workers de Spark, copiar este bloque y cambiar el nombre del servicio
-  # spark-worker-1, spark-worker-2, etc.
   spark-worker:
-    # image: bitnami/spark:latest
     build:
       context: .
       dockerfile: Dockerfile-spark
@@ -232,7 +228,7 @@ services:
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
     volumes:
-      - ./:/home
+      - cassandra_data:/var/lib/cassandra
     networks:
       - confluent
     healthcheck:
@@ -243,3 +239,7 @@ services:
 
 networks:
   confluent:
+
+volumes:
+  cassandra_data:
+  spark_checkpoints:

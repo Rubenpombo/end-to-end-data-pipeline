@@ -69,15 +69,17 @@ def format_data(res):
     
     return data
 
-
 def stream_data():
     import json
     from kafka import KafkaProducer
+    import time
     import logging
+    import os
 
+    kafka_host = os.getenv('KAFKA_HOST', 'broker:29092')
     # Configure producer with specific settings to handle DNS issues
     producer = KafkaProducer(
-        bootstrap_servers=['broker:29092'], # localhost because the script is executed locally
+        bootstrap_servers=[kafka_host],
         client_id='user-producer',
         security_protocol="PLAINTEXT",
         connections_max_idle_ms=5000
@@ -85,19 +87,24 @@ def stream_data():
 
     current_time = time.time()
 
-    while True:
-        if time.time() > current_time + 120: # Stop after 60 seconds
-            break
-        try:
-            res = get_data()
-            if res is not None:  # Ensure res is not None before formatting
-                res = format_data(res)
-                producer.send('users_created', json.dumps(res).encode('utf-8'))
-                time.sleep(0.5)
+    try:
+        while True:
+            if time.time() > current_time + 120: # Stop after 120 seconds
+                break
+            try:
+                res = get_data()
+                if res is not None:  # Ensure res is not None before formatting
+                    res = format_data(res)
+                    producer.send('users_created', json.dumps(res).encode('utf-8'))
+                    time.sleep(0.5)
 
-        except Exception as e:
-            logging.error(f"Error sending message: {e}")
-            continue
+            except Exception as e:
+                logging.error(f"Error sending message: {e}")
+                continue
+    finally:
+        producer.close()
+        logging.info("Kafka producer closed.")
+
     
 
 with DAG('user_automation',
