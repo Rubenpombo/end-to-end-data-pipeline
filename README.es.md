@@ -61,7 +61,6 @@ Todo el stack está contenedorizado con **Docker**, orquestado por **Apache Airf
    ```
 
 6. **Visualizar Datos**:
-   - **Dashboard de Negocio (Flask)**: Ejecuta `python3 dashboard.py` y visita [http://localhost:5000](http://localhost:5000).
    - **Métricas de Sistema (Grafana)**: Visita [http://localhost:3000](http://localhost:3000) (Usuario: `admin` / Clave: `admin`).
 
 ## **Estructura del Proyecto**
@@ -71,7 +70,6 @@ Todo el stack está contenedorizado con **Docker**, orquestado por **Apache Airf
 ├── dags/                      # DAGs de Airflow (Lógica de ingesta)
 ├── script/                    # Entrypoints de Docker
 ├── tests/                     # Tests unitarios y de integración
-├── dashboard.py               # Aplicación de visualización Flask/Plotly
 ├── docker-compose.yml         # Orquestación de contenedores (Full Stack)
 ├── Dockerfile-spark           # Imagen personalizada de Spark 4.x
 ├── prometheus.yml             # Configuración de recolección de métricas

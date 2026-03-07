@@ -61,7 +61,6 @@ The entire stack is containerized with **Docker**, orchestrated by **Apache Airf
    ```
 
 6. **Visualize Data**:
-   - **Business Dashboard (Flask)**: Run `python3 dashboard.py` and visit [http://localhost:5000](http://localhost:5000).
    - **System Metrics (Grafana)**: Visit [http://localhost:3000](http://localhost:3000) (User: `admin` / Pass: `admin`).
 
 ## **Project Structure**
@@ -71,7 +70,6 @@ The entire stack is containerized with **Docker**, orchestrated by **Apache Airf
 ├── dags/                      # Airflow DAGs (Ingestion logic)
 ├── script/                    # Docker entrypoints
 ├── tests/                     # Unit & Integration tests
-├── dashboard.py               # Flask/Plotly visualization app
 ├── docker-compose.yml         # Container orchestration (Full Stack)
 ├── Dockerfile-spark           # Custom Spark 4.x image
 ├── prometheus.yml             # Metrics collection config
