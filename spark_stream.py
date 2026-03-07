@@ -102,17 +102,18 @@ def create_spark_connection():
     Creates a Spark session configured with the necessary packages for Cassandra and Kafka integration.
     """
     s_conn = None
+    cassandra_host = os.getenv('CASSANDRA_HOST', 'localhost')
     try:
         s_conn = SparkSession.builder \
             .appName('SparkDataStreaming') \
             .config('spark.jars.packages', 
                     "com.datastax.spark:spark-cassandra-connector_2.13:3.5.1,"
                     "org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.2") \
-            .config('spark.cassandra.connection.host', 'localhost') \
+            .config('spark.cassandra.connection.host', cassandra_host) \
             .getOrCreate()
         
         s_conn.sparkContext.setLogLevel("ERROR")
-        logging.info("Spark connection created successfully.")
+        logging.info(f"Spark connection created successfully (Cassandra host: {cassandra_host}).")
     except Exception as e:
         logging.error(f"Error creating Spark session: {e}")
 
@@ -126,14 +127,15 @@ def connect_to_kafka(spark_conn):
     """
 
     spark_df = None
+    kafka_host = os.getenv('KAFKA_HOST', 'localhost:9092')
     try:
         spark_df = spark_conn.readStream \
             .format('kafka') \
-            .option('kafka.bootstrap.servers', 'localhost:9092') \
+            .option('kafka.bootstrap.servers', kafka_host) \
             .option('subscribe', 'users_created') \
             .option('startingOffsets', 'earliest') \
             .load()
-        logging.info("Kafka dataframe created successfully")
+        logging.info(f"Kafka dataframe created successfully (Kafka host: {kafka_host})")
     except Exception as e:
         logging.warning(f"Kafka dataframe could not be created because: {e}")
     
@@ -147,7 +149,8 @@ def create_cassandra_connection():
     """
 
     try:
-        cluster = Cluster(['localhost'], port=9042, load_balancing_policy=RoundRobinPolicy(), protocol_version=5)
+        cassandra_host = os.getenv('CASSANDRA_HOST', 'localhost')
+        cluster = Cluster([cassandra_host], port=9042, load_balancing_policy=RoundRobinPolicy(), protocol_version=5)
         cas_session = cluster.connect() 
         return cas_session
     
