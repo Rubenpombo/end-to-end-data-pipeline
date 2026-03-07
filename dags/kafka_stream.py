@@ -72,7 +72,6 @@ def format_data(res):
 def stream_data():
     import json
     from kafka import KafkaProducer
-    import time
     import logging
     import os
 
