@@ -4,13 +4,15 @@ import sys
 from cassandra.cluster import Cluster
 from cassandra.policies import RoundRobinPolicy
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, to_json, col, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType
 import os
 
-if not os.path.exists('/tmp/checkpoint'):
+CHECKPOINT_DIR = os.getenv('CHECKPOINT_DIR', '/tmp/checkpoint')
+
+if not os.path.exists(CHECKPOINT_DIR):
     try:
-        os.makedirs('/tmp/checkpoint')
+        os.makedirs(CHECKPOINT_DIR)
     except Exception as e:
         logging.error(f"Failed to create checkpoint directory: {e}")
         sys.exit(1)  # Exit with an error code for Airflow to detect failure
@@ -54,47 +56,13 @@ def create_table(session):
                 registered_date TEXT,
                 phone TEXT,
                 picture TEXT,
-                nationality TEXT
+                nationality TEXT,
+                ingested_at TIMESTAMP
             )
         """)
         logging.info("Table 'created_users' created successfully!")
     except Exception as e:
         logging.error(f"Failed to create table: {e}")
-
-
-def insert_data(session, **kwargs):
-    """
-    Inserts a single user record into the Cassandra table.
-    """
-
-    print("Inserting data...")
-    
-    user_id = kwargs.get('id')
-    first_name = kwargs.get('first_name')
-    last_name = kwargs.get('last_name')
-    gender = kwargs.get('gender')
-    address = kwargs.get('address')
-    email = kwargs.get('email')
-    username = kwargs.get('username')
-    password = kwargs.get('password')
-    dob = kwargs.get('dob')
-    registered_date = kwargs.get('registered_date')
-    phone = kwargs.get('phone')
-    picture = kwargs.get('picture')
-    nationality = kwargs.get('nationality')
-
-    try:
-        session.execute("""
-            INSERT INTO spark_streams.created_users(
-                id, first_name, last_name, gender, address, email, username, password, 
-                dob, registered_date, phone, picture, nationality
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, 
-        (user_id, first_name, last_name, gender, address, email, username, password, 
-         dob, registered_date, phone, picture, nationality))
-        logging.info(f"Data inserted for {first_name} {last_name}")
-    except Exception as e:
-        logging.error(f"Could not insert data due to {e}")
 
 
 def create_spark_connection():
@@ -103,17 +71,21 @@ def create_spark_connection():
     """
     s_conn = None
     cassandra_host = os.getenv('CASSANDRA_HOST', 'localhost')
+    master_url = os.getenv('SPARK_MASTER_URL', 'local[*]')
     try:
         s_conn = SparkSession.builder \
             .appName('SparkDataStreaming') \
-            .config('spark.jars.packages', 
+            .master(master_url) \
+            .config('spark.jars.packages',
                     "com.datastax.spark:spark-cassandra-connector_2.13:3.5.1,"
                     "org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.2") \
+            .config('spark.jars.ivy', '/tmp/.ivy2') \
             .config('spark.cassandra.connection.host', cassandra_host) \
             .getOrCreate()
-        
+
         s_conn.sparkContext.setLogLevel("ERROR")
-        logging.info(f"Spark connection created successfully (Cassandra host: {cassandra_host}).")
+        logging.info(f"Spark connection created successfully "
+                     f"(master: {master_url}, Cassandra host: {cassandra_host}).")
     except Exception as e:
         logging.error(f"Error creating Spark session: {e}")
 
@@ -162,7 +134,10 @@ def create_cassandra_connection():
 def create_selection_df_from_kafka(spark_df):
     """
     Parses the raw Kafka messages into a structured DataFrame.
-    The schema defines the fields to extract from the JSON messages.
+
+    Data contract: `address` travels as a nested JSON object on the topic and
+    is parsed here with its full struct schema, then serialized back to a JSON
+    string so it matches the `address TEXT` column in Cassandra.
     """
 
     schema = StructType([
@@ -196,7 +171,9 @@ def create_selection_df_from_kafka(spark_df):
     ])
     
     sel = spark_df.selectExpr("CAST(value AS STRING)") \
-        .select(from_json(col('value'), schema).alias('data')).select("data.*")
+        .select(from_json(col('value'), schema).alias('data')).select("data.*") \
+        .withColumn('address', to_json(col('address'))) \
+        .withColumn('ingested_at', current_timestamp())
 
     return sel
 
@@ -204,35 +181,39 @@ def create_selection_df_from_kafka(spark_df):
 if __name__ == "__main__":
     try:
         spark_conn = create_spark_connection()
+        if spark_conn is None:
+            logging.error("Spark session could not be created; aborting.")
+            sys.exit(1)
 
-        if spark_conn is not None:
-            spark_df = connect_to_kafka(spark_conn)
+        spark_df = connect_to_kafka(spark_conn)
+        if spark_df is None:
+            logging.error("Kafka stream could not be created; aborting.")
+            sys.exit(1)
 
-            selection_df = create_selection_df_from_kafka(spark_df)
+        cassandra_conn = create_cassandra_connection()
+        if cassandra_conn is None:
+            logging.error("Cassandra connection could not be established; aborting.")
+            sys.exit(1)
 
-            cassandra_conn = create_cassandra_connection()
+        selection_df = create_selection_df_from_kafka(spark_df)
+        create_keyspace(cassandra_conn)
+        create_table(cassandra_conn)
 
-            if cassandra_conn is not None:
-                create_keyspace(cassandra_conn)
-                create_table(cassandra_conn)
+        try:
+            logging.info("Starting streaming query to write data to Cassandra...")
+            streaming_query = (selection_df.writeStream.format("org.apache.spark.sql.cassandra")
+                               .option('checkpointLocation', CHECKPOINT_DIR)
+                               .option('keyspace', 'spark_streams')
+                               .option('table', 'created_users')
+                               .start())
+            streaming_query.awaitTermination()
 
-                # insert_data(cassandra_conn)
-
-                try:
-                    logging.info("Starting streaming query to write data to Cassandra...")
-                    streaming_query = (selection_df.writeStream.format("org.apache.spark.sql.cassandra")
-                                       .option('checkpointLocation', '/tmp/checkpoint')
-                                       .option('keyspace', 'spark_streams')
-                                       .option('table', 'created_users')
-                                       .start())
-                    streaming_query.awaitTermination()
-
-                except Exception as e:
-                    logging.error(f"Streaming query failed: {e}")
-                    sys.exit(1)  # Exit with an error code for Airflow to detect failure
-                finally:
-                    cassandra_conn.shutdown()
-                    logging.info("Cassandra connection closed.")
+        except Exception as e:
+            logging.error(f"Streaming query failed: {e}")
+            sys.exit(1)  # Exit with an error code for Airflow to detect failure
+        finally:
+            cassandra_conn.shutdown()
+            logging.info("Cassandra connection closed.")
 
     except Exception as e:
         logging.error(f"Error in main execution: {e}")

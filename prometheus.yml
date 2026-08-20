@@ -1,7 +1,17 @@
 global:
   scrape_interval: 15s
 
+# Scrape HTTP Prometheus endpoints only. The broker JMX port (:9101) is not
+# Prometheus text format (that is what Kafka UI uses); scraping it left `up=0`.
 scrape_configs:
-  - job_name: 'kafka'
+  - job_name: prometheus
     static_configs:
-      - targets: ['broker:9101']
+      - targets: ['localhost:9090']
+
+  - job_name: grafana
+    static_configs:
+      - targets: ['grafana:3000']
+
+  - job_name: kafka
+    static_configs:
+      - targets: ['kafka-exporter:9308']

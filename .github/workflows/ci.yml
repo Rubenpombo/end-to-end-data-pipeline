@@ -38,7 +38,7 @@ jobs:
       - name: Run Tests with Coverage
         run: |
           export PYTHONPATH=$PYTHONPATH:.
-          pytest tests/test_api_health.py tests/test_spark_stream.py --cov=. --cov-report=xml
+          pytest -m "not integration" --cov=. --cov-report=xml
 
       - name: SonarCloud Scan
         uses: sonarsource/sonarqube-scan-action@master
@@ -50,5 +50,5 @@ jobs:
             -Dsonar.python.coverage.reportPaths=coverage.xml
             -Dsonar.sources=.
             -Dsonar.tests=tests
-            -Dsonar.exclusions=**/__pycache__/**,.venv/**,visuals/**
+            -Dsonar.exclusions=**/__pycache__/**,.venv/**
             -Dsonar.qualitygate.wait=false

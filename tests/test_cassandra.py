@@ -1,7 +1,9 @@
 import unittest
+import pytest
 from cassandra.cluster import Cluster
 from spark_stream import create_keyspace, create_table
 
+@pytest.mark.integration
 class TestCassandra(unittest.TestCase):
     def setUp(self):
         """

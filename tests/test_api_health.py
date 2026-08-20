@@ -1,6 +1,8 @@
 import unittest
+import pytest
 import requests
 
+@pytest.mark.integration
 class TestAPIHealth(unittest.TestCase):
     API_URL = "https://randomuser.me/api/"
 
