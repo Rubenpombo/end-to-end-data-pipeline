@@ -1,6 +1,8 @@
 import unittest
+import pytest
 import requests
 
+@pytest.mark.integration
 class TestObservabilityHealth(unittest.TestCase):
     SERVICES = {
         "Kafka UI": "http://localhost:8000",

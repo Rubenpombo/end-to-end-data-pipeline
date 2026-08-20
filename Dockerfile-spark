@@ -1,8 +1,18 @@
-FROM apache/spark:latest
+FROM apache/spark:4.0.2-scala2.13-java17-python3-r-ubuntu
 
 USER root
 
-# Instalamos curl usando apt-get (Debian base)
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# curl: healthchecks. python3-pip + cassandra-driver: the streaming job uses
+# the Cassandra Python driver to create the keyspace/table before streaming.
+# PIP_BREAK_SYSTEM_PACKAGES is ignored by older pip and required on Ubuntu 24.04+.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && PIP_BREAK_SYSTEM_PACKAGES=1 pip3 install --no-cache-dir cassandra-driver \
+    && mkdir -p /home/spark/.ivy2 /tmp/checkpoint \
+    && chown -R spark:spark /home/spark /tmp/checkpoint
+
+# spark-submit resolves --packages via Ivy, which needs a writable HOME
+ENV HOME=/home/spark
 
 USER spark

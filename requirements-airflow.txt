@@ -1,0 +1,5 @@
+# Minimal dependencies for the Airflow containers (webserver/scheduler).
+# The DAG only talks to the RandomUser API and Kafka; the full
+# requirements.txt (pyspark, pytest, ruff, ...) is for host development.
+requests==2.32.5
+kafka-python-ng==2.2.3

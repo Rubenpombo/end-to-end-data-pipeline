@@ -1,1 +1,24 @@
+# Virtual environments
 .venv/
+venv/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Coverage and test artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Local environment files (keep .env.example tracked)
+.env
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/

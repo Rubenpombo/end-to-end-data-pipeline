@@ -1,14 +1,17 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 import time
-# from airflow.operators.bash_operator import BashOperator
 
 
 default_args = {
-    'owner': 'airscholar',
-    'start_date': datetime(2025, 5, 4, 10, 00), # 4th May 2025
+    'owner': 'rubenpombo',
+    'start_date': datetime(2025, 5, 4, 10, 00),  # 4th May 2025
+    'retries': 2,
+    'retry_delay': timedelta(minutes=1),
 }
+
+STREAM_DURATION_SECONDS = 120
 
 
 def get_data():
@@ -88,7 +91,7 @@ def stream_data():
 
     try:
         while True:
-            if time.time() > current_time + 120: # Stop after 120 seconds
+            if time.time() > current_time + STREAM_DURATION_SECONDS:
                 break
             try:
                 res = get_data()
@@ -106,21 +109,28 @@ def stream_data():
 
     
 
+dag_doc_md = """
+### user_automation
+
+Bounded-streaming ingestion demo: on each run, the DAG fetches random users
+from the [RandomUser API](https://randomuser.me/) and produces them to the
+Kafka topic `users_created` for a 120-second window (~2 msg/s), then stops.
+
+The daily schedule simply re-triggers this ingestion window; the continuous
+part of the pipeline lives in the Spark Structured Streaming job
+(`spark_stream.py`), which consumes the topic and writes to Cassandra.
+"""
+
 with DAG('user_automation',
          default_args=default_args,
+         description='Ingest RandomUser API data into Kafka (bounded streaming demo)',
          schedule='@daily',
-         catchup=False,) as dag:
-    
+         catchup=False,
+         tags=['streaming', 'kafka', 'demo'],
+         doc_md=dag_doc_md) as dag:
+
     streaming_task = PythonOperator(
         task_id='stream_data_from_api',
-        python_callable=stream_data
+        python_callable=stream_data,
+        execution_timeout=timedelta(minutes=5)
     )
-
-    # spark_stream_task = BashOperator(
-    #     task_id='run_spark_stream',
-    #     bash_command='python3 /home/ruben/Documentos/side_projects/dataeng-project/spark_stream.py'
-    # )
-
-    # Set task dependencies
-    # streaming_task >> spark_stream_task
-
